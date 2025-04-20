@@ -7,6 +7,9 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.widget.TextView;
+import android.view.View;
+import android.widget.Button;
+
 
 public class MainActivity extends Activity implements SensorEventListener {
 
@@ -25,29 +28,56 @@ public class MainActivity extends Activity implements SensorEventListener {
     private static final float THRESHOLD = 10.0f; // Acceleration magnitude threshold
     private long lastStepTime = 0; // Last time a step was counted
     private static final int STEP_DELAY_NS = 250_000_000; // 250ms between steps seems reasonable
+    private boolean isTracking = false; // Tracking won't start until the user presses Start
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main); // Connect to UI layout
+        setContentView(R.layout.activity_main);
 
-        // Reference to the step counter TextView
         stepCounterText = findViewById(R.id.stepCounterText);
 
-        // Initialize the sensor manager and get default sensors
+        Button startButton = findViewById(R.id.startButton); // Start button
+        Button stopButton = findViewById(R.id.stopButton); // Stop Button
+        Button resetButton = findViewById(R.id.resetButton); // Reset button
+
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
 
-        // Register sensor listeners (motion updates)
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
-        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_UI);
+        // Default: not listening until start button is pressed
+        isTracking = false;
 
-        // Andy, integrate GPS using LocationManager here
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isTracking = true;
+                sensorManager.registerListener(MainActivity.this, accelerometer, SensorManager.SENSOR_DELAY_UI);
+                sensorManager.registerListener(MainActivity.this, gyroscope, SensorManager.SENSOR_DELAY_UI);
+            }
+        });
+
+        stopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isTracking = false;
+                sensorManager.unregisterListener(MainActivity.this);
+            }
+        });
+
+        resetButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stepCount = 0;
+                stepCounterText.setText("Steps: " + stepCount);
+            }
+        });
     }
+
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+        if (!isTracking) return;
         // Listen for accelerometer data only (gyro optional for refinement)
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             detectStep(event);
