@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
 public class MainActivity extends FragmentActivity implements SensorEventListener, OnMapReadyCallback {
 
     // All Sensors and their manager and individual sensors
