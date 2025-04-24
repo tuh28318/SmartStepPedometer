@@ -104,12 +104,15 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 
     }
 
-
+    // STEP COUNTER SENSING PIPELINE
+    //
+    //
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (!isTracking) return;
         // Listen for accelerometer data only (gyro optional for refinement)
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            // Step 1: DATA ACQUISITION
             detectStep(event);
         }
     }
@@ -120,6 +123,7 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
         float y = event.values[1];
         float z = event.values[2];
 
+        // STEP 2: PREPROCESSING - REMOVE GRAVITY
         // Use a high-pass filter to remove gravity from the raw values
         final float alpha = 0.8f;
         gravity[0] = alpha * gravity[0] + (1 - alpha) * x;
@@ -131,9 +135,11 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
         float linearY = y - gravity[1];
         float linearZ = z - gravity[2];
 
+        // STEP 3: FEATURE EXTRACTION
         // Calculate the magnitude of motion vector
         float magnitude = (float) Math.sqrt(linearX * linearX + linearY * linearY + linearZ * linearZ);
 
+        // STEP 4: CLASSIFICATION/REGRESSION
         // Use time + magnitude threshold to filter out noise and false positives (ANNOYING)
         long now = System.nanoTime();
         if (magnitude > THRESHOLD && (now - lastStepTime) > STEP_DELAY_NS) {
@@ -160,13 +166,16 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
     }
 
 
-    // --- GPS & Map ---
+    // --- GPS & Map --- SENSING PIPELINE
+    //
+    //
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
     }
 
     private void startLocationUpdates() {
+        // STEP 1: DATA ACQUISITION
         LocationRequest request = LocationRequest.create();
         request.setInterval(3000);
         request.setFastestInterval(2000);
@@ -176,8 +185,13 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
             @Override
             public void onLocationResult(@NonNull LocationResult result) {
                 for (Location location : result.getLocations()) {
+                    // STEP 2: PREPROCESSING
                     LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
+
+                    // STEP 3: FEATURE EXTRACTION
                     pathPoints.add(point);
+
+                    // STEP 4: CLASSIFICATION/REGRESSION
                     updatePath();
                 }
             }
